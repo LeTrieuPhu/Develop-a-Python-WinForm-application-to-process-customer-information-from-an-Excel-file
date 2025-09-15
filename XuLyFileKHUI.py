@@ -537,6 +537,7 @@ class MainWindow(QtWidgets.QMainWindow):
             new_item.setToolTip(file_path)
             self.ui.listFileGop.addItem(new_item)
 
+    # Hàm có nhiệm vụ kiểm tra file output (file Quản Lý) có đang mở không để tránh trường hợp ghi dè dữ liệu khi output đang mở
     def is_file_locked(self, filepath):
         """Kiểm tra file có đang bị khóa (ví dụ đang mở trong Excel) không"""
         if not os.path.exists(filepath):
@@ -547,7 +548,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 return False
         except PermissionError:
             return True
-        
+
+    # Hàm có nhiệm vụ kiểm tra một file đã được xử lý chưa 
+    # Bằng cách kiểm tra tên file chọn được có nằm trong danh sách lịch sử không
+    # Nếu file đã được xử lý thì bỏ qua
     def is_file_processed(self, input_path):
         input_stem = Path(str(input_path)).stem.lower()   # lấy tên không có .ext, chuyển về lowercase
         for i in range(self.ui.listFileLS.count()):
@@ -556,6 +560,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 return False
         return True
 
+    # 2 hàm show có nhiệm vụ tái định dạng lại hộp thông báo
     def show_warning(self, text):
         msg = QtWidgets.QMessageBox(self)
         msg.setWindowTitle("Cảnh báo")
@@ -602,6 +607,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         msg.exec()
 
+   # Hàm có nhiệm vụ xử lý file dầu vào của khách hàng 
     def Xu_Ly_File(self):
         # đường dẫn input file
         input_path = self.ui.listFileKH.currentItem()
@@ -610,43 +616,43 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if not input_path:
             self.show_warning('Vui lòng chọn File cần xử lý trước khi xử lý')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", '<span style="color: rgb(255, 170, 0);">Vui lòng chọn File cần xử lý trước khi xử lý</span>')
             return
         else: 
             input_path = input_path.data(QtCore.Qt.ItemDataRole.UserRole)
     
         if not output_path:
             self.show_warning('Vui lòng chọn File quản lý trước khi xử lý')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", '<span style="color: rgb(255, 170, 0);">Vui lòng chọn File quản lý trước khi xử lý</span>')
             return
         else:
             output_path = output_path.data(QtCore.Qt.ItemDataRole.UserRole)
 
         if not self.is_file_processed(input_path):
             self.show_information(f'File {Path(str(os.path.basename(input_path))).stem.lower()} đã được xử lý')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", f'<span style="color: rgb(255, 170, 0);">File {os.path.basename(output_path)} đã được xử lý</span>')
             return
         
         # 🔒 kiểm tra file output có đang mở không
         if self.is_file_locked(output_path):
             self.show_warning(f'File {os.path.basename(output_path)} đang mở. Vui lòng đóng file trước khi xử lý')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", f'<span style="color: rgb(255, 170, 0);">File {os.path.basename(output_path)} đang mở. Vui lòng đóng file trước khi xử lý</span>')
             return
         if XuLyFileKH.Loc_Thong_Tin(input_path, output_path):
+            p = Path(input_path)
+            # kiểm tra đuôi file, nếu là .xls thì đổi đuôi thành .xlsx
+            if p.suffix.lower() == '.xls':
+                input_path = p.with_suffix('.xlsx')
+            # chỉ lấy tên file, không lấy đường dẫn
             name = os.path.basename(input_path)
             item = QtWidgets.QListWidgetItem(name)
             item.setData(QtCore.Qt.ItemDataRole.UserRole, input_path)
-            item.setToolTip(input_path)
+            item.setToolTip(str(input_path))
 
-            # 👉 ở đây bạn chọn muốn đưa file vào list nào
+            # thêm đường tên file vào list Lịch Sử
             self.ui.listFileLS.addItem(item)
             self.Xoa_File()
             self.show_information('Mã đơn hàng đã được thêm')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", '<span style="color: rgb(255, 170, 0);">Mã đơn hàng đã được thêm</span>')
         else:
             self.show_information('Mã đơn hàng đã tồn tại')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", '<span style="color: rgb(255, 170, 0);">Mã đơn hàng đã tồn tại</span>')
 
+    # Hàm có nhiệm vụ xử lý file dữ liệu khách hàng cần cập nhật
     def Cap_Nhat_Thong_Tin(self):
         # đường dẫn cập nhật file
         CapNhat_path = self.ui.listFileKHCN.currentItem()
@@ -655,14 +661,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if not CapNhat_path:
             self.show_warning('Vui lòng chọn File Cần cập nhật trước khi cập nhật')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", '<span style="color: rgb(255, 170, 0);">Vui lòng chọn File Cần cập nhật trước khi cập nhật</span>')
             return
         else: 
             CapNhat_path = CapNhat_path.data(QtCore.Qt.ItemDataRole.UserRole)
 
         if not output_path:
             self.show_warning('Vui lòng chọn File quản lý trước khi cập nhật')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", '<span style="color: rgb(255, 170, 0);">Vui lòng chọn File quản lý trước khi cập nhật</span>')
             return
         else:
             output_path = output_path.data(QtCore.Qt.ItemDataRole.UserRole)
@@ -670,26 +674,29 @@ class MainWindow(QtWidgets.QMainWindow):
         # 🔒 kiểm tra file output có đang mở không
         if self.is_file_locked(output_path):
             self.show_warning(f'File {os.path.basename(output_path)} đang mở. Vui lòng đóng file trước khi xử lý')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", f'<span style="color: rgb(255, 170, 0);">File {os.path.basename(output_path)} đang mở. Vui lòng đóng file trước khi xử lý</span>')
             return
         
         if XuLyFileKH.Cap_Nhat_Thong_Tin(CapNhat_path, output_path, self.changed_cells):
-            name = os.path.basename(CapNhat_path)
+            p = Path(input_path)
+            # kiểm tra đuôi file, nếu là .xls thì đổi đuôi thành .xlsx
+            if p.suffix.lower() == '.xls':
+                input_path = p.with_suffix('.xlsx')
+            # chỉ lấy tên file, không lấy đường dẫn
+            name = os.path.basename(input_path)
             item = QtWidgets.QListWidgetItem(name)
-            item.setData(QtCore.Qt.ItemDataRole.UserRole, CapNhat_path)
-            item.setToolTip(CapNhat_path)
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, input_path)
+            item.setToolTip(str(input_path))
 
-            # 👉 ở đây bạn chọn muốn đưa file vào list nào
+            # thêm đường tên file vào list Lịch Sử
             self.ui.listFileLS.addItem(item)
             self.Xoa_File()
             self.show_information('Dữ liệu của mã đơn hàng đã được cập nhật')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", '<span style="color: rgb(255, 170, 0);">Dữ liệu của mã đơn hàng đã được cập nhật</span>')
         else:
             self.show_information('Mã đơn hàng không tồn tại')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", '<span style="color: rgb(255, 170, 0);">Mã đơn hàng chưa được cập nhật</span>')
 
+    # Hàm dùng để xử lý dữ liệu đầu vào khi có nhiều hơn một file
     def Gop_File(self):
-        # đường dẫn cập nhật file
+        # đường dẫn danh sách file gộp
         list_path_file = []
         for i in range(self.ui.listFileGop.count()):  
             list_path_file.append(self.ui.listFileGop.item(i).data(QtCore.Qt.ItemDataRole.UserRole))
@@ -699,7 +706,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if not output_path:
             self.show_warning('Vui lòng chọn File quản lý trước khi cập gộp')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", '<span style="color: rgb(255, 170, 0);">Vui lòng chọn File quản lý trước khi cập nhật</span>')
             return
         else:
             output_path = output_path.data(QtCore.Qt.ItemDataRole.UserRole)
@@ -707,23 +713,26 @@ class MainWindow(QtWidgets.QMainWindow):
         # 🔒 kiểm tra file output có đang mở không
         if self.is_file_locked(output_path):
             self.show_warning(f'File {os.path.basename(output_path)} đang mở. Vui lòng đóng file trước khi xử lý')
-            # QtWidgets.QMessageBox.warning(self, "Cảnh báo", f'<span style="color: rgb(255, 170, 0);">File {os.path.basename(output_path)} đang mở. Vui lòng đóng file trước khi xử lý</span>')
             return
         
         if XuLyFileKH.Gop_File(list_path_file, output_path):
             for input_path in list_path_file:
+                p = Path(input_path)
+                # kiểm tra đuôi file, nếu là .xls thì đổi đuôi thành .xlsx
+                if p.suffix.lower() == '.xls':
+                    input_path = p.with_suffix('.xlsx')
+                # chỉ lấy tên file, không lấy đường dẫn
                 name = os.path.basename(input_path)
                 item = QtWidgets.QListWidgetItem(name)
                 item.setData(QtCore.Qt.ItemDataRole.UserRole, input_path)
-                item.setToolTip(input_path)
-                # 👉 ở đây bạn chọn muốn đưa file vào list nào
+                item.setToolTip(str(input_path))
+
+                # thêm đường tên file vào list Lịch Sử
                 self.ui.listFileLS.addItem(item)
             self.ui.listFileGop.clear()
             self.show_information('Dữ liệu của mã đơn hàng đã được gộp và thêm')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", '<span style="color: rgb(255, 170, 0);">Dữ liệu của mã đơn hàng đã được gộp và thêm</span>')
         else:
             self.show_information('Mã đơn hàng chưa được gộp và thêm')
-            # QtWidgets.QMessageBox.information(self, "Thông báo", '<span style="color: rgb(255, 170, 0);">Mã đơn hàng chưa được gộp và thêm')
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
